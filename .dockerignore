@@ -1,0 +1,16 @@
+# flyctl launch added from slash-commands\.vscode\.gitignore
+# Packages
+slash-commands\.vscode\**\node_modules
+slash-commands\.vscode\**\yarn.lock
+slash-commands\.vscode\**\package_lock.json
+
+# Log files
+slash-commands\.vscode\**\logs
+slash-commands\.vscode\**\*.log
+
+# Miscellaneous
+slash-commands\.vscode\**\.tmp
+slash-commands\.vscode\**\.vscode\**\*
+!slash-commands\.vscode\**\.vscode\extensions.json
+slash-commands\.vscode\**\.env
+fly.toml
