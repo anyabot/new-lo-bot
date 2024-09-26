@@ -30,6 +30,8 @@ export const nameChange = function nameChange(text: string) {
   else {
     unit = titleCase(unit);
   }
+  unit.replace(" os", " OS");
+  unit.replace(" Os", " OS")
   console.log(unit);
   return unit;
 };
