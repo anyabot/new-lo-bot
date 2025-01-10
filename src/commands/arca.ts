@@ -1,4 +1,4 @@
-import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions } from 'slash-create';
+import { SlashCommand, CommandOptionType, SlashCreator, CommandContext } from 'slash-create';
 import { event } from "../library/event"
 
 export default class ArcaCommand extends SlashCommand {

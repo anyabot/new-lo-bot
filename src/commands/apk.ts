@@ -1,4 +1,4 @@
-import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions } from 'slash-create';
+import { SlashCommand, SlashCreator, CommandContext } from 'slash-create';
 import { load } from 'cheerio';
 import { BASE_WIKI } from '..';
 

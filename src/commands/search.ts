@@ -1,6 +1,5 @@
 import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions } from 'slash-create';
 import { load } from 'cheerio';
-import { nameChange, sendPages, te } from '../library/functions';
 import { BASE_WIKI } from '..';
 
 export default class SearchCommand extends SlashCommand {

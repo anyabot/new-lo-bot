@@ -1,6 +1,6 @@
 import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions } from 'slash-create';
 import { load } from 'cheerio';
-import { nameChange, restoreImageLink, sendPages, sendPagesWithNumber, te } from '../library/functions';
+import { nameChange, restoreImageLink, sendPagesWithNumber, te } from '../library/functions';
 import { BASE_WIKI } from '..';
 
 export default class SkillCommand extends SlashCommand {

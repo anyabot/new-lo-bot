@@ -1,6 +1,6 @@
 import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions } from 'slash-create';
 import { load } from 'cheerio';
-import { nameChange, sendPages } from '../library/functions';
+import { nameChange } from '../library/functions';
 import { BASE_WIKI } from '..';
 
 export default class DropCommand extends SlashCommand {
