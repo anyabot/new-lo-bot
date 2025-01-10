@@ -1,8 +1,8 @@
-# syntax = docker/dockerfile:1
+# syntax = docker/dockerfile:1.4.0
 
 # Adjust NODE_VERSION as desired
-ARG NODE_VERSION=20
-FROM node:${NODE_VERSION}-alpine as base
+ARG NODE_VERSION=18
+FROM node:${NODE_VERSION} as base
 
 LABEL fly_launch_runtime="Node.js"
 
@@ -17,8 +17,11 @@ ENV NODE_ENV="production"
 FROM base as build
 
 # Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install -y build-essential pkg-config python-is-python3
+RUN apt-get update -qq || apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    python-is-python3 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install node modules
 COPY --link package.json yarn.lock ./
