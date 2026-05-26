@@ -13,7 +13,7 @@ export const creator = new SlashCreator({
   applicationID: process.env.DISCORD_APP_ID,
   publicKey: process.env.DISCORD_PUBLIC_KEY,
   token: process.env.DISCORD_BOT_TOKEN,
-  serverPort: parseInt(process.env.PORT, 10) || 8020,
+  serverPort: parseInt(process.env.PORT, 10) || 8080,
   serverHost: '0.0.0.0',
 });
 
