@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for new-lo-bot on 2025-01-10T20:46:33+07:00
+# fly.toml app configuration file generated for new-lo-bot on 2026-05-26T14:41:49Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -20,3 +20,4 @@ primary_region = 'nrt'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 1024
