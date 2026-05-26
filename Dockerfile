@@ -23,9 +23,9 @@ RUN apt-get update -qq || apt-get install -y --no-install-recommends \
     python-is-python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install node modules
+# Install node modules (include devDependencies for build tools like tsc)
 COPY --link package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # Copy application code
 COPY --link . .
