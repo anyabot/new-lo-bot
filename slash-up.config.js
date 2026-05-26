@@ -9,6 +9,8 @@ module.exports = {
   applicationId: process.env.DISCORD_APP_ID,
   // This is where the path to command files are, .ts files are supported!
   commandPath: './src/commands',
+  // Permission syncing is deprecated in slash-create v6
+  syncPermissions: false,
   // You can use different environments with --env (-e)
   env: {
     development: {

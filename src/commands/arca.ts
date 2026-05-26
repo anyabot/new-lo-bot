@@ -1,5 +1,5 @@
 import { SlashCommand, CommandOptionType, SlashCreator, CommandContext } from 'slash-create';
-import { event } from "../library/event"
+import { getEvents, sanitizeKey } from '../library/firebase';
 
 export default class ArcaCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -19,8 +19,17 @@ export default class ArcaCommand extends SlashCommand {
 
   async run(ctx: CommandContext) {
     await ctx.defer();
-      var ev = ctx.options["key"].toLowerCase();
-      if (event[ev]) { { ctx.send(event[ev]) } }
-      else {ctx.send("Can not find")}
+    const ev = sanitizeKey(ctx.options['key'].toLowerCase());
+    try {
+      const events = await getEvents();
+      if (events[ev]) {
+        ctx.send(events[ev]);
+      } else {
+        ctx.send('Can not find');
+      }
+    } catch (err) {
+      console.error('Firebase event lookup failed:', err);
+      ctx.send('Error fetching event data');
+    }
   }
 }

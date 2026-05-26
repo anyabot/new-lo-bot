@@ -33,6 +33,9 @@ COPY --link . .
 # Build application
 RUN yarn run build
 
+# Sync Command
+RUN yarn run sync
+
 # Remove development dependencies
 RUN yarn install --production=true
 

@@ -13,3 +13,7 @@ logs/
 !.vscode/extensions.json
 .env
 dist/
+
+serviceAccountKey.json
+
+/admin

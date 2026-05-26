@@ -32,57 +32,35 @@ export default class SkillCommand extends SlashCommand {
       const $ = load(body);
       let pages: MessageEmbedOptions[]
       let pagesList: MessageEmbedOptions[][] = []
-      $('.wikitable.skilltable').each(function (i, elem) {
+      $('.wikitable.skilltable').each(function (_, elem) {
         check = true
         let $2 = load($.html(this));
-        let siz = $2('.wikitable.skilltable tbody').find('tr').length
         let img = $2('.wikitable.skilltable tbody tr td table tbody tr td div a img').attr('data-src')
         if (!img) { img = $2('.wikitable.skilltable tbody tr td table tbody tr td div a img').attr('src') }
-        let state = te($2('.wikitable.skilltable tbody tr:nth-child(1) td').html().trim())
-        if (state == "Name") { state = null }
-        if (state == "Unit") { state = null }
+        // state is used for form-change units (e.g. "Human Form") to prefix skill names
+        const firstTdHtml = $2('.wikitable.skilltable tbody tr:nth-child(1) td').html()
+        let state = firstTdHtml ? te(firstTdHtml) : null
+        if (state == "Name" || state == "Unit") { state = null }
         pages = []
-        for (var i = 1; i < siz; i++) {
-          let siz2 = $2('.wikitable.skilltable tbody tr:nth-child(' + i + ')').find('td').length
-          if (siz2 == 6) {
-            let na = te($2('.wikitable.skilltable tbody tr:nth-child(' + i + ') td:nth-child(2)').html().trim())
-            if (na != "Name") {
-              if (state) { na = state + "\n" + na }
-              let des = te($2('.wikitable.skilltable tbody tr:nth-child(' + i + ') td:nth-child(3)').text().trim())
-              let siz3 = $2('.wikitable.skilltable tbody tr:nth-child(' + (i + 1) + ')').find('td').length
-              let aoe: string
-              if (siz3 == 1) {
-                aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + (i + 1) + ') .skillAOE a img').attr('data-src')
-                if (!aoe) { aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + (i + 1) + ') .skillAOE a img').attr('src') }
-              }
-              else {
-                aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + i + ') .skillAOE a img').attr('data-src')
-                if (!aoe) { aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + i + ') .skillAOE a img').attr('src') }
-              }
-              let range = te($2('.wikitable.skilltable tbody tr:nth-child(' + i + ') td:nth-child(5)').html().trim())
-              pages.push(addEmbed(img, na, des, range, aoe, link))
-            }
-          }
-          else if (siz2 == 4) {
-            let na = te($2('.wikitable.skilltable tbody tr:nth-child(' + i + ') td:nth-child(1)').html().trim())
-            if (na != "Name") {
-              if (state) { na = state + "\n" + na }
-              let des = te($2('.wikitable.skilltable tbody tr:nth-child(' + i + ') td:nth-child(2)').text().trim())
-              let siz3 = $2('.wikitable.skilltable tbody tr:nth-child(' + (i + 1) + ')').find('td').length
-              let aoe: string
-              if (siz3 == 1) {
-                aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + (i + 1) + ') .skillAOE a img').attr('data-src')
-                if (!aoe) { aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + (i + 1) + ') .skillAOE a img').attr('src') }
-              }
-              else {
-                aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + i + ') .skillAOE a img').attr('data-src')
-                if (!aoe) { aoe = $2('.wikitable.skilltable tbody tr:nth-child(' + i + ') .skillAOE a img').attr('src') }
-              }
-              let range = te($2('.wikitable.skilltable tbody tr:nth-child(' + i + ') td:nth-child(4)').html().trim())
-              pages.push(addEmbed(img, na, des, range, aoe, link))
-            }
-          }
-        }
+        // Anchor on .skill-box-description — present in every skill row, absent in headers
+        $2('.wikitable.skilltable tbody tr').each(function (_, row) {
+          const $row = $2(row)
+          if (!$row.find('.skill-box-description').length) return
+          // First skill row has a portrait cell with rowspan; subsequent rows don't
+          const hasPortrait = $row.find('td[rowspan]').length > 0
+          const nameIdx = hasPortrait ? 2 : 1
+          const rangeIdx = hasPortrait ? 5 : 4
+          const nameHtml = $row.find('td:nth-child(' + nameIdx + ')').html()
+          if (!nameHtml) return
+          let na = te(nameHtml)
+          if (!na) return
+          if (state) na = state + '\n' + na
+          const des = te($row.find('.skill-box-description').text())
+          const rangeHtml = $row.find('td:nth-child(' + rangeIdx + ')').html()
+          const range = rangeHtml ? te(rangeHtml) : null
+          const aoe = $row.find('.skillAOE a img').attr('data-src') || $row.find('.skillAOE a img').attr('src')
+          pages.push(addEmbed(img, na, des, range, aoe, link))
+        })
         pagesList.push(pages)
       })
       if (check) {
@@ -101,10 +79,10 @@ function addEmbed(img: string, name: string, skill: string, range: string, aoe: 
   let embed: MessageEmbedOptions = {
     title: name,
     url: link,
-    thumbnail: {url: restoreImageLink(img)},
     description: skill,
     fields: []
   };
+  if (img) embed.thumbnail = { url: restoreImageLink(img) };
 	if (range) {
 		embed.fields.push({
       name: 'Range/Cost',

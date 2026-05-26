@@ -27,7 +27,11 @@ creator.on('commandRun', (command, _, ctx) =>
 creator.on('commandRegister', (command) => logger.info(`Registered command ${command.commandName}`));
 creator.on('commandError', (command, error) => logger.error(`Command ${command.commandName}:`, error));
 
-creator.withServer(new FastifyServer()).registerCommandsIn(path.join(__dirname, 'commands')).startServer();
+creator.withServer(new FastifyServer());
+creator.registerCommandsIn(path.join(__dirname, 'commands'))
+  .then(() => creator.startServer())
+  .then(() => creator.syncCommands({ deleteCommands: true, syncGuilds: true, skipGuildErrors: true }))
+  .catch((err) => logger.error('Startup error:', err));
 
 console.log(`Starting server at "localhost:${creator.options.serverPort}/interactions"`);
 

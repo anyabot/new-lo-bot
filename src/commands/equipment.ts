@@ -46,7 +46,7 @@ export default class EquipmentCommand extends SlashCommand {
           let name = tags.eq(0).html();
           name = te(name);
           if (name) {
-            if (rankRemove(name.toLowerCase()).includes(gear) || (note != null && (note.toLowerCase().includes(`${gear}'s exclusive`) || note.toLowerCase().includes(`${gear} exclusive`)))) {
+            if (rankRemove(name.toLowerCase()) === gear || (note != null && (note.toLowerCase().includes(`${gear}'s exclusive`) || note.toLowerCase().includes(`${gear} exclusive`)))) {
               check = true;
               let img = $(this).children().eq(0).find('a').find('img').eq(0).attr('data-src');
               if (!img) {
@@ -78,7 +78,7 @@ export default class EquipmentCommand extends SlashCommand {
               }
               if (exp) {
                 embed.fields.push({
-                  name: 'EXP to Max',
+                  name: 'Resources Cost',
                   value: exp
                 });
               }

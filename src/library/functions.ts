@@ -7,7 +7,7 @@ import {
   MessageEmbedOptions,
   ComponentContext,
   ComponentActionRow,
-  ComponentSelectMenu
+  AnySelectComponent
 } from 'slash-create';
 import { BASE_WIKI } from '..';
 
@@ -38,21 +38,23 @@ export const nameChange = function nameChange(text: string) {
 };
 
 export function te(output: string) {
-  if (output == null) {
-    return null;
-  }
-  output = output.replace(/<[^>]*>/g, '\n');
-  output = output.replace(/\n+ /g, '\n');
-  output = output.trim();
-  var arr = output.split('\n');
-  var filtered = arr.filter(function (el) {
-    return el != null && el != '' && el.substring(0, 12) != 'This ability';
-  });
+  if (output == null) return null;
+  // Remove inline images entirely — they are icons and produce spurious newlines
+  output = output.replace(/<img[^>]*>/gi, '');
+  // Block / line-break tags become newlines
+  output = output.replace(/<\/?(br|p|div|li|tr|td|th)[^>]*>/gi, '\n');
+  // Strip remaining tags
+  output = output.replace(/<[^>]*>/g, '');
+  // Decode common HTML entities
+  output = output.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
+  const filtered = output.split('\n')
+    .map(l => l.trim())
+    .filter(l => l !== '' && !l.startsWith('This ability'));
   return filtered.join('\n');
 }
 
 export function restoreImageLink(output: string, removeSize: boolean = false) {
-  console.log(output);
+  if (!output) return null;
   if (!output.includes(BASE_WIKI)) output = BASE_WIKI + output;
   if (output.includes("/thumb/") && removeSize) {
     let split = output.split("/thumb/");
@@ -116,7 +118,7 @@ export const sendPages = async function (ctx: CommandContext, pages: MessageEmbe
       style: ButtonStyle.SECONDARY
     };
 
-    const jumpOptions: ComponentSelectMenu = {
+    const jumpOptions: AnySelectComponent = {
       type: ComponentType.STRING_SELECT,
       custom_id: 'jump',
       placeholder: "Jump to a Page",
