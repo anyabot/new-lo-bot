@@ -24,20 +24,20 @@ RUN apt-get update -qq || apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install node modules
-COPY --link package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --production=false
+COPY --link package.json package-lock.json ./
+RUN npm ci
 
 # Copy application code
 COPY --link . .
 
 # Build application
-RUN yarn run build
+RUN npm run build
 
 # Sync Command
-RUN yarn run sync
+RUN npm run sync
 
 # Remove development dependencies
-RUN yarn install --production=true
+RUN npm prune --production
 
 
 # Final stage for app image
@@ -48,4 +48,4 @@ COPY --from=build /app /app
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 8080
-CMD [ "yarn", "run", "start" ]
+CMD [ "npm", "run", "start" ]
