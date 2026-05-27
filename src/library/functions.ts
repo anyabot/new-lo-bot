@@ -360,3 +360,14 @@ export const sendPagesWithNumber = async function (ctx: CommandContext, original
     }
   }
 };
+
+export async function wikiSearch(query: string, limit = 10): Promise<string[]> {
+  const url = `${BASE_WIKI}/api.php?action=opensearch&format=json&formatversion=2&search=${encodeURIComponent(query)}&namespace=0&limit=${limit}`;
+  try {
+    const res = await fetch(url, { method: 'GET' });
+    const data: [string, string[]] = await res.json();
+    return (data[1] ?? []).filter(t => !t.includes('/'));
+  } catch {
+    return [];
+  }
+}

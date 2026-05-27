@@ -1,6 +1,6 @@
 import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions, ComponentType, AnyComponentButton, AnySelectComponent, ButtonStyle, ComponentActionRow } from 'slash-create';
 import { load } from 'cheerio';
-import { nameChange, restoreImageLink } from '../library/functions';
+import { nameChange, restoreImageLink, wikiSearch } from '../library/functions';
 import { BASE_WIKI } from '..';
 
 interface SkinGroup {
@@ -21,6 +21,50 @@ function collectImages($: any, container: any): string[] {
     });
   }
   return images;
+}
+
+async function fetchImageData(pageTitle: string): Promise<{ groups: SkinGroup[], link: string }> {
+  const link = `${BASE_WIKI}/wiki/${encodeURI(pageTitle)}`;
+  const res = await fetch(link, { method: 'GET' });
+  const body = await res.text();
+  const $ = load(body);
+  const groups: SkinGroup[] = [];
+
+  const outerPanels = $('.tabber__panel').filter((_: any, el: any) =>
+    $(el).parent().closest('.tabber__panel').length === 0 &&
+    ($(el).find('.skin-box-contents').length > 0 || $(el).find('.skin').length > 0)
+  );
+
+  if (outerPanels.length > 0) {
+    outerPanels.each((_: any, panel: any) => {
+      const labelId = $(panel).attr('aria-labelledby');
+      let skinName = pageTitle;
+      if (labelId) {
+        const label = $(`[id="${labelId}"]`).text().trim();
+        if (label) skinName = label;
+      }
+      if ($(panel).find('.skin-box-contents').length > 0) {
+        $(panel).find('.skin-box-skin-list').each((listIdx: number, skinList: any) => {
+          const groupLabel = listIdx === 0 ? skinName : `${skinName} (Damaged)`;
+          const images = collectImages($, skinList);
+          if (images.length > 0) groups.push({ label: groupLabel, images });
+        });
+      } else {
+        const images = collectImages($, panel);
+        if (images.length > 0) groups.push({ label: skinName, images });
+      }
+    });
+  } else {
+    $('.skin-box-contents').each((_: any, contents: any) => {
+      $(contents).find('.skin-box-skin-list').each((listIdx: number, skinList: any) => {
+        const groupLabel = listIdx === 0 ? pageTitle : `${pageTitle} (Damaged)`;
+        const images = collectImages($, skinList);
+        if (images.length > 0) groups.push({ label: groupLabel, images });
+      });
+    });
+  }
+
+  return { groups, link };
 }
 
 export default class ImageCommand extends SlashCommand {
@@ -44,58 +88,27 @@ export default class ImageCommand extends SlashCommand {
     const text = ctx.options['unit'];
     if (!text) return 'No unit name';
     const unit = nameChange(text);
-    const link = `${BASE_WIKI}/wiki/${encodeURI(unit)}`;
+
     try {
-      const res = await fetch(link, { method: 'GET' });
-      const body = await res.text();
-      const $ = load(body);
+      let { groups, link } = await fetchImageData(unit);
 
-      const groups: SkinGroup[] = [];
-
-      // Top-level skin panels: .tabber__panel elements not nested inside another .tabber__panel
-      // that contain either skin-box-contents (skins with variations) or .skin (simple skins like Base)
-      const outerPanels = $('.tabber__panel').filter((_: any, el: any) =>
-        $(el).parent().closest('.tabber__panel').length === 0 &&
-        ($(el).find('.skin-box-contents').length > 0 || $(el).find('.skin').length > 0)
-      );
-
-      if (outerPanels.length > 0) {
-        outerPanels.each((_: any, panel: any) => {
-          const labelId = $(panel).attr('aria-labelledby');
-          let skinName = unit;
-          if (labelId) {
-            const label = $(`[id="${labelId}"]`).text().trim();
-            if (label) skinName = label;
+      let fallbackTitle: string | null = null;
+      if (groups.length === 0) {
+        const searchResults = await wikiSearch(text);
+        for (const title of searchResults) {
+          const fallback = await fetchImageData(title);
+          if (fallback.groups.length > 0) {
+            groups = fallback.groups;
+            link = fallback.link;
+            fallbackTitle = title;
+            break;
           }
-
-          if ($(panel).find('.skin-box-contents').length > 0) {
-            // Skin with variations: group into normal and damaged lists
-            $(panel).find('.skin-box-skin-list').each((listIdx: number, skinList: any) => {
-              const groupLabel = listIdx === 0 ? skinName : `${skinName} (Damaged)`;
-              const images = collectImages($, skinList);
-              if (images.length > 0) groups.push({ label: groupLabel, images });
-            });
-          } else {
-            // Simple skin (e.g. Base with no variations): collect directly from panel
-            const images = collectImages($, panel);
-            if (images.length > 0) groups.push({ label: skinName, images });
-          }
-        });
-      } else {
-        // Single-skin unit — skin-box-contents directly in page (no outer tabber)
-        $('.skin-box-contents').each((_: any, contents: any) => {
-          $(contents).find('.skin-box-skin-list').each((listIdx: number, skinList: any) => {
-            const groupLabel = listIdx === 0 ? unit : `${unit} (Damaged)`;
-            const images = collectImages($, skinList);
-            if (images.length > 0) groups.push({ label: groupLabel, images });
-          });
-        });
+        }
       }
 
       if (groups.length === 0) return ctx.send("Can't find anything");
+      if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
 
-      // Build pages: each group → chunks of 4 embeds
-      // Discord stacks embeds sharing the same url into a 2x2 image grid
       const pages: MessageEmbedOptions[][] = [];
       for (const group of groups) {
         for (let i = 0; i < group.images.length; i += 4) {
@@ -206,7 +219,7 @@ export default class ImageCommand extends SlashCommand {
       }
     } catch (err) {
       ctx.send("Can't find anything");
-      console.log(err, link);
+      console.log(err);
     }
   }
 }

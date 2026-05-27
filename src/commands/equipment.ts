@@ -1,9 +1,69 @@
 import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions } from 'slash-create';
 import { load } from 'cheerio';
-import { restoreImageLink, sendPages, te } from '../library/functions';
-import {name as name2} from '../library/name'
-import {equip as name3} from '../library/equip'
+import { restoreImageLink, sendPages, te, wikiSearch } from '../library/functions';
+import { name as name2 } from '../library/name';
+import { equip as name3 } from '../library/equip';
 import { BASE_WIKI } from '..';
+
+function nameChange(unit: string) {
+  let unit2 = unit.toLowerCase();
+  if (name3[unit2]) unit2 = name3[unit2];
+  unit2 = unit2.toLowerCase();
+  if (name2[unit2]) unit2 = name2[unit2];
+  return unit2;
+}
+
+function rankRemove(unit: string) {
+  const li = unit.split(' ');
+  if (li.length > 1 && ['b', 'a', 's', 'ss', 'sss'].includes(li[li.length - 1])) {
+    li.pop();
+    return li.join(' ');
+  }
+  return unit;
+}
+
+function scanEquipList($: any, gear: string): { pages: MessageEmbedOptions[]; tooMany: boolean } {
+  const pages: MessageEmbedOptions[] = [];
+  let tooMany = false;
+
+  $('.wikitable tbody tr').each(function (_, elem) {
+    if (tooMany) return;
+    const tags = $(elem).children().eq(1).find('a');
+    let note = $(elem).children().eq(3).text();
+    note = te(note);
+    if (tags.length > 0) {
+      let ename = te(tags.eq(0).html());
+      if (ename) {
+        if (
+          rankRemove(ename.toLowerCase()) === gear ||
+          (note != null && (
+            note.toLowerCase().includes(`${gear}'s exclusive`) ||
+            note.toLowerCase().includes(`${gear} exclusive`)
+          ))
+        ) {
+          let img = $(elem).children().eq(0).find('a').find('img').eq(0).attr('data-src');
+          if (!img) img = $(elem).children().eq(0).find('a').find('img').eq(0).attr('src');
+          img = restoreImageLink(img);
+          let eff = te($(elem).children().eq(2).html());
+          let exp = te($(elem).children().eq(4).text());
+          const link2 = `${BASE_WIKI}/wiki/${encodeURI(ename)}`;
+          const embed: MessageEmbedOptions = {
+            title: ename,
+            url: link2,
+            image: { url: img },
+            fields: [{ name: 'Effect', value: eff }]
+          };
+          if (note) embed.fields.push({ name: 'Note', value: note });
+          if (exp) embed.fields.push({ name: 'Resources Cost', value: exp });
+          pages.push(embed);
+          if (pages.length > 5) { tooMany = true; return; }
+        }
+      }
+    }
+  });
+
+  return { pages, tooMany };
+}
 
 export default class EquipmentCommand extends SlashCommand {
   constructor(creator: SlashCreator) {
@@ -26,109 +86,37 @@ export default class EquipmentCommand extends SlashCommand {
     const text = ctx.options['equipment'];
     if (!text) return 'No equipment name';
     if (text.length < 3) return 'Search term too short!';
-    var gear = text.toLowerCase();
-    gear = nameChange(gear);
-    gear = gear.toLowerCase();
-    var many = false;
-    const link = `${BASE_WIKI}/wiki/Equipment_List`;
+
+    const gear = rankRemove(nameChange(text).toLowerCase());
+
     try {
-      var check = false;
-      const res = await fetch(link, { method: 'GET' });
+      const res = await fetch(`${BASE_WIKI}/wiki/Equipment_List`, { method: 'GET' });
       const body = await res.text();
       const $ = load(body);
-      var pages: MessageEmbedOptions[] = [];
-      $('.wikitable tbody tr').each(function (i, elem) {
-        if (many) return;
-        let tags = $(this).children().eq(1).find('a');
-        let note = $(this).children().eq(3).text();
-        note = te(note);
-        if (tags.length > 0) {
-          let name = tags.eq(0).html();
-          name = te(name);
-          if (name) {
-            if (rankRemove(name.toLowerCase()) === gear || (note != null && (note.toLowerCase().includes(`${gear}'s exclusive`) || note.toLowerCase().includes(`${gear} exclusive`)))) {
-              check = true;
-              let img = $(this).children().eq(0).find('a').find('img').eq(0).attr('data-src');
-              if (!img) {
-                img = $(this).children().eq(0).find('a').find('img').eq(0).attr('src');
-              }
-              img = restoreImageLink(img);
-              let eff = $(this).children().eq(2).html();
-              eff = te(eff);
 
-              let exp = $(this).children().eq(4).text();
-              exp = te(exp);
-              let link2 = `${BASE_WIKI}/wiki/${encodeURI(name)}`;
-              let embed: MessageEmbedOptions = {
-                title: name,
-                url: link2,
-                image: { url: img },
-                fields: [
-                  {
-                    name: 'Effect',
-                    value: eff
-                  }
-                ]
-              };
-              if (note) {
-                embed.fields.push({
-                  name: 'Note',
-                  value: note
-                });
-              }
-              if (exp) {
-                embed.fields.push({
-                  name: 'Resources Cost',
-                  value: exp
-                });
-              }
-              pages.push(embed);
-              if (pages.length > 5) {
-                ctx.send("Too many matches");
-                many = true;
-                return;
-              }
-            }
-          }
+      let { pages, tooMany } = scanEquipList($, gear);
+
+      if (tooMany) return ctx.send('Too many matches');
+
+      let fallbackTitle: string | null = null;
+      if (pages.length === 0) {
+        const searchResults = await wikiSearch(text);
+        for (const title of searchResults) {
+          if (pages.length > 0) break;
+          const fallbackGear = rankRemove(nameChange(title).toLowerCase());
+          if (fallbackGear === gear) continue;
+          const result = scanEquipList($, fallbackGear);
+          if (result.tooMany) return ctx.send('Too many matches');
+          if (result.pages.length > 0) { pages = result.pages; fallbackTitle = title; }
         }
-      });
-      if (many) return;
-      if (pages.length > 0) {
-        sendPages(ctx, pages);
-      } else {
-        ctx.send("Can't find anything");
       }
+
+      if (pages.length === 0) return ctx.send("Can't find anything");
+      if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
+      sendPages(ctx, pages);
     } catch (err) {
       ctx.send("Can't find anything");
-      console.log(err, link);
+      console.log(err);
     }
   }
-}
-
-function nameChange(unit: string) {
-  let unit2 = unit.toLowerCase();
-  if (name3[unit2]) {
-    unit2 = name3[unit2];
-  }
-  unit2 = unit2.toLowerCase();
-  if (name2[unit2]) {
-    unit2 = name2[unit2];
-  }
-  return unit2;
-}
-function rankRemove(unit: string) {
-  var unit2 = unit;
-  var li = unit.split(' ');
-  if (
-    li.length > 1 &&
-    (li[li.length - 1] == 'b' ||
-      li[li.length - 1] == 'a' ||
-      li[li.length - 1] == 's' ||
-      li[li.length - 1] == 'ss' ||
-      li[li.length - 1] == 'sss')
-  ) {
-    li.pop();
-    unit2 = li.join(' ');
-  }
-  return unit2;
 }
