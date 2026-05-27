@@ -362,12 +362,31 @@ export const sendPagesWithNumber = async function (ctx: CommandContext, original
 };
 
 export async function wikiSearch(query: string, limit = 10): Promise<string[]> {
-  const url = `${BASE_WIKI}/api.php?action=opensearch&format=json&formatversion=2&search=${encodeURIComponent(query)}&namespace=0&limit=${limit}`;
+  const titles: string[] = [];
+
   try {
+    const url = `${BASE_WIKI}/api.php?action=opensearch&format=json&formatversion=2&search=${encodeURIComponent(query)}&namespace=0&limit=${limit}`;
     const res = await fetch(url, { method: 'GET' });
     const data: [string, string[]] = await res.json();
-    return (data[1] ?? []).filter(t => !t.includes('/'));
-  } catch {
-    return [];
+    for (const t of (data[1] ?? [])) {
+      if (!t.includes('/')) titles.push(t);
+    }
+  } catch { /* fall through to fulltext search */ }
+
+  if (titles.length < 5) {
+    try {
+      const url = `${BASE_WIKI}/index.php?search=${encodeURIComponent(query)}&title=Special%3ASearch&profile=default&fulltext=1`;
+      const res = await fetch(url, { method: 'GET' });
+      const body = await res.text();
+      const { load } = await import('cheerio');
+      const $ = load(body);
+      $('.mw-search-results li .mw-search-result-heading a').each((_, el) => {
+        if (titles.length >= limit) return false;
+        const title = $(el).attr('title');
+        if (title && !titles.includes(title)) titles.push(title);
+      });
+    } catch { /* ignore */ }
   }
+
+  return titles;
 }
