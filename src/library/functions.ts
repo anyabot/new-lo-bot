@@ -369,7 +369,7 @@ export async function wikiSearch(query: string, limit = 10): Promise<string[]> {
     const res = await fetch(url, { method: 'GET' });
     const data: [string, string[]] = await res.json();
     for (const t of (data[1] ?? [])) {
-      if (!t.includes('/')) titles.push(t);
+      if (!t.endsWith('/stats')) titles.push(t);
     }
   } catch { /* fall through to fulltext search */ }
 
