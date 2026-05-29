@@ -31,6 +31,9 @@ async function fetchSkillData(pageTitle: string): Promise<MessageEmbedOptions[][
   let check = false;
   const pagesList: MessageEmbedOptions[][] = [];
 
+  const skillTableCount = $('.wikitable.skilltable').length;
+  console.log(`[skill] "${pageTitle}": skilltables found=${skillTableCount}`);
+
   $('.wikitable.skilltable').each(function (_, elem) {
     check = true;
     const $2 = load($.html(this));
@@ -59,6 +62,7 @@ async function fetchSkillData(pageTitle: string): Promise<MessageEmbedOptions[][
       const aoe = $row.find('.skillAOE a img').attr('data-src') || $row.find('.skillAOE a img').attr('src');
       pages.push(addEmbed(img, na, des, range, aoe, link));
     });
+    console.log(`[skill] skilltable parsed: ${pages.length} skills`);
     pagesList.push(pages);
   });
 

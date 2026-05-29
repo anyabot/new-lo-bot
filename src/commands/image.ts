@@ -11,13 +11,20 @@ interface SkinGroup {
 function collectImages($: any, container: any): string[] {
   const images: string[] = [];
   $(container).find('.skin img').each((_: any, img: any) => {
-    const src = $(img).attr('data-src') || $(img).attr('src');
-    if (src) images.push(restoreImageLink(src, true));
+    const dataSrc = $(img).attr('data-src');
+    const src = $(img).attr('src');
+    const chosen = dataSrc || src;
+    console.log(`[collectImages] .skin img: data-src=${dataSrc}, src=${src}, chosen=${chosen}`);
+    if (chosen) images.push(restoreImageLink(chosen, true));
   });
   if (images.length === 0) {
+    console.log(`[collectImages] no .skin img found, falling back to all img`);
     $(container).find('img').each((_: any, img: any) => {
-      const src = $(img).attr('data-src') || $(img).attr('src');
-      if (src) images.push(restoreImageLink(src, true));
+      const dataSrc = $(img).attr('data-src');
+      const src = $(img).attr('src');
+      const chosen = dataSrc || src;
+      console.log(`[collectImages] fallback img: data-src=${dataSrc}, src=${src}, chosen=${chosen}`);
+      if (chosen) images.push(restoreImageLink(chosen, true));
     });
   }
   return images;
@@ -35,6 +42,8 @@ async function fetchImageData(pageTitle: string): Promise<{ groups: SkinGroup[],
     ($(el).find('.skin-box-contents').length > 0 || $(el).find('.skin').length > 0)
   );
 
+  console.log(`[fetchImageData] outerPanels count: ${outerPanels.length}`);
+
   if (outerPanels.length > 0) {
     outerPanels.each((_: any, panel: any) => {
       const labelId = $(panel).attr('aria-labelledby');
@@ -43,14 +52,18 @@ async function fetchImageData(pageTitle: string): Promise<{ groups: SkinGroup[],
         const label = $(`[id="${labelId}"]`).text().trim();
         if (label) skinName = label;
       }
-      if ($(panel).find('.skin-box-contents').length > 0) {
+      const hasContents = $(panel).find('.skin-box-contents').length > 0;
+      console.log(`[fetchImageData] panel "${skinName}" (labelId=${labelId}): hasContents=${hasContents}`);
+      if (hasContents) {
         $(panel).find('.skin-box-skin-list').each((listIdx: number, skinList: any) => {
           const groupLabel = listIdx === 0 ? skinName : `${skinName} (Damaged)`;
           const images = collectImages($, skinList);
+          console.log(`[fetchImageData] skin-box-skin-list[${listIdx}] "${groupLabel}": ${images.length} images`);
           if (images.length > 0) groups.push({ label: groupLabel, images });
         });
       } else {
         const images = collectImages($, panel);
+        console.log(`[image] simple panel "${skinName}": ${images.length} images`, images);
         if (images.length > 0) groups.push({ label: skinName, images });
       }
     });
@@ -109,6 +122,8 @@ export default class ImageCommand extends SlashCommand {
       if (groups.length === 0) return await ctx.send("Can't find anything");
       if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
 
+      console.log(`[image] groups(${groups.length}):`, groups.map(g => `${g.label}(${g.images.length})`).join(', '));
+
       const pages: MessageEmbedOptions[][] = [];
       for (const group of groups) {
         for (let i = 0; i < group.images.length; i += 4) {
@@ -132,6 +147,7 @@ export default class ImageCommand extends SlashCommand {
       let page = 0;
 
       const buildEmbeds = () => {
+        console.log(`[image] building page ${page + 1}/${pages.length}:`, pages[page]?.map(e => e.image?.url));
         const embeds = pages[page].map(e => ({ ...e }));
         embeds[0] = { ...embeds[0], footer: { text: `Page ${page + 1} of ${pages.length}` } };
         return embeds;

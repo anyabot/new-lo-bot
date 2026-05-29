@@ -95,6 +95,7 @@ export default class EquipmentCommand extends SlashCommand {
       const $ = load(body);
 
       let { pages, tooMany } = scanEquipList($, gear);
+      console.log(`[equipment] gear="${gear}": pages=${pages.length}, tooMany=${tooMany}`);
 
       if (tooMany) return await ctx.send('Too many matches');
 
@@ -106,6 +107,7 @@ export default class EquipmentCommand extends SlashCommand {
           const fallbackGear = rankRemove(nameChange(title).toLowerCase());
           if (fallbackGear === gear) continue;
           const result = scanEquipList($, fallbackGear);
+          console.log(`[equipment] fallback "${fallbackGear}" (from "${title}"): pages=${result.pages.length}`);
           if (result.tooMany) return ctx.send('Too many matches');
           if (result.pages.length > 0) { pages = result.pages; fallbackTitle = title; }
         }

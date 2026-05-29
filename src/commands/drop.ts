@@ -17,6 +17,7 @@ async function fetchDropData(pageTitle: string): Promise<DropResult> {
   const catText = $('.catlinks').text();
   const isCharacter = catText.includes('Characters');
   const isEquipment = catText.includes('Equipment');
+  console.log(`[drop] "${pageTitle}": isCharacter=${isCharacter}, isEquipment=${isEquipment}`);
   if (!isCharacter && !isEquipment) return { type: 'notfound' };
   if (isCharacter && catText.includes('B-Rank')) return { type: 'msg', msg: 'B-Rank units are not listed in the wiki drop table.' };
 
@@ -71,6 +72,7 @@ async function fetchDropData(pageTitle: string): Promise<DropResult> {
     embed.fields.push({ name: ev, value: eventMap[ev].join(', '), inline: true });
   }
 
+  console.log(`[drop] "${pageTitle}": fields=${embed.fields.length}, events=${eventOrder.length}`);
   if (embed.fields.length === 0) return { type: 'notfound' };
 
   const pages: MessageEmbedOptions[] = [];
