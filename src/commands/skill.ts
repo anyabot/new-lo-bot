@@ -99,11 +99,11 @@ export default class SkillCommand extends SlashCommand {
         }
       }
 
-      if (!pagesList) return ctx.send("Can't find anything");
+      if (!pagesList) return await ctx.send("Can't find anything");
       if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
       sendPagesWithNumber(ctx, pagesList[0], pagesList[1]);
     } catch (err) {
-      ctx.send("Can't find anything");
+      await ctx.send("Can't find anything");
     }
   }
 }

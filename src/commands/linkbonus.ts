@@ -49,13 +49,13 @@ export default class LinkBonusCommand extends SlashCommand {
               }
             ]
           };
-					ctx.send({embeds: [embed]})
+					await ctx.send({embeds: [embed]})
 				}
       else {
-        return ctx.send("Can't find anything");
+        return await ctx.send("Can't find anything");
       }
     } catch (err) {
-      ctx.send("Can't find anything");
+      await ctx.send("Can't find anything");
       console.log(err, link);
     }
   }

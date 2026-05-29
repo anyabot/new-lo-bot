@@ -80,13 +80,13 @@ export default class CraftingTimeCommand extends SlashCommand {
           }
         }
         if (times.length > 0) {
-          ctx.send(times.join('\n'));
+          await ctx.send(times.join('\n'));
         } else {
-          ctx.send('Wrong Input');
+          await ctx.send('Wrong Input');
         }
       }
     } catch (err) {
-      ctx.send("Can't find anything");
+      await ctx.send("Can't find anything");
       console.log(err, link);
     }
   }

@@ -23,11 +23,11 @@ export default class SearchCommand extends SlashCommand {
     const text = ctx.options['key'];
     try {
       const titles = await wikiSearch(text, 10);
-      if (titles.length === 0) return ctx.send('No Result');
+      if (titles.length === 0) return await ctx.send('No Result');
       const out = titles.map(t => `${t}: <${BASE_WIKI}/wiki/${encodeURI(t)}>`).join('\n');
-      ctx.send(out);
+      await ctx.send(out);
     } catch (err) {
-      ctx.send("Can't find anything");
+      await ctx.send("Can't find anything");
       console.log(err);
     }
   }

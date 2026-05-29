@@ -19,13 +19,13 @@ export default class ArcaCommand extends SlashCommand {
       const $ = load(body);
       let result = $("#apklink a").attr("href");
       if (result.length > 0) {
-        ctx.send(`<${result}>`);
+        await ctx.send(`<${result}>`);
       } else {
-        ctx.send("Can't find anything");
+        await ctx.send("Can't find anything");
       }
     }
     catch (err) {
-      ctx.send("Can't find anything");
+      await ctx.send("Can't find anything");
       console.log(err, link);
     }
   }

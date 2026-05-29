@@ -106,7 +106,7 @@ export default class ImageCommand extends SlashCommand {
         }
       }
 
-      if (groups.length === 0) return ctx.send("Can't find anything");
+      if (groups.length === 0) return await ctx.send("Can't find anything");
       if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
 
       const pages: MessageEmbedOptions[][] = [];
@@ -218,7 +218,7 @@ export default class ImageCommand extends SlashCommand {
         return;
       }
     } catch (err) {
-      ctx.send("Can't find anything");
+      await ctx.send("Can't find anything");
       console.log(err);
     }
   }

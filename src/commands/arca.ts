@@ -23,13 +23,13 @@ export default class ArcaCommand extends SlashCommand {
     try {
       const events = await getEvents();
       if (events[ev]) {
-        ctx.send(events[ev]);
+        await ctx.send(events[ev]);
       } else {
-        ctx.send('Can not find');
+        await ctx.send('Can not find');
       }
     } catch (err) {
       console.error('Firebase event lookup failed:', err);
-      ctx.send('Error fetching event data');
+      await ctx.send('Error fetching event data');
     }
   }
 }

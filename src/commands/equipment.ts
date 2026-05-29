@@ -96,7 +96,7 @@ export default class EquipmentCommand extends SlashCommand {
 
       let { pages, tooMany } = scanEquipList($, gear);
 
-      if (tooMany) return ctx.send('Too many matches');
+      if (tooMany) return await ctx.send('Too many matches');
 
       let fallbackTitle: string | null = null;
       if (pages.length === 0) {
@@ -111,11 +111,11 @@ export default class EquipmentCommand extends SlashCommand {
         }
       }
 
-      if (pages.length === 0) return ctx.send("Can't find anything");
+      if (pages.length === 0) return await ctx.send("Can't find anything");
       if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
       sendPages(ctx, pages);
     } catch (err) {
-      ctx.send("Can't find anything");
+      await ctx.send("Can't find anything");
       console.log(err);
     }
   }

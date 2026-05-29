@@ -27,6 +27,8 @@ creator.on('commandRun', (command, _, ctx) =>
 creator.on('commandRegister', (command) => logger.info(`Registered command ${command.commandName}`));
 creator.on('commandError', (command, error) => logger.error(`Command ${command.commandName}:`, error));
 
+process.on('unhandledRejection', (reason) => logger.error('Unhandled rejection:', reason));
+
 creator.withServer(new FastifyServer());
 creator.registerCommandsIn(path.join(__dirname, 'commands'))
   .then(() => creator.startServer())

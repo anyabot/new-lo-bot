@@ -53,6 +53,6 @@ export default class HelpCommand extends SlashCommand {
       ]
     };
 
-    ctx.send({ embeds: [embed] });
+    await ctx.send({ embeds: [embed] });
   }
 }
