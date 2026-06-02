@@ -105,7 +105,16 @@ export default class SkillCommand extends SlashCommand {
 
       if (!pagesList) return await ctx.send("Can't find anything");
       if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
-      sendPagesWithNumber(ctx, pagesList[0], pagesList[1]);
+
+      const resolvedTitle = fallbackTitle ?? unit;
+      const esPagesList = await fetchSkillData(`${resolvedTitle}/Global_(ES)`);
+      console.log(`[skill] ES page for "${resolvedTitle}": ${esPagesList ? esPagesList.length + ' tables' : 'not found'}`);
+
+      if (esPagesList) {
+        sendPagesWithNumber(ctx, pagesList[0], esPagesList[0], 'ES');
+      } else {
+        sendPagesWithNumber(ctx, pagesList[0], pagesList[1]);
+      }
     } catch (err) {
       await ctx.send("Can't find anything");
     }

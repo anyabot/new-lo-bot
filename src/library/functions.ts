@@ -203,7 +203,7 @@ export const sendPages = async function (ctx: CommandContext, pages: MessageEmbe
     }
   }
 };
-export const sendPagesWithNumber = async function (ctx: CommandContext, originalPages: MessageEmbedOptions[], switchPages?: MessageEmbedOptions[]) {
+export const sendPagesWithNumber = async function (ctx: CommandContext, originalPages: MessageEmbedOptions[], switchPages?: MessageEmbedOptions[], swapLabel = 'Form Change') {
   let pages = originalPages;
   let swapped = false;
   if (pages.length == 1) {
@@ -266,7 +266,7 @@ export const sendPagesWithNumber = async function (ctx: CommandContext, original
 
     const swapButton: AnyComponentButton = {
       type: ComponentType.BUTTON,
-      label: 'Form Change',
+      label: swapLabel,
       custom_id: 'swap',
       emoji: { name: '🔄' },
       style: ButtonStyle.SECONDARY
@@ -346,11 +346,13 @@ export const sendPagesWithNumber = async function (ctx: CommandContext, original
         if (swapped) {
           pages = originalPages;
           swapped = false;
-        }
-        else {
+          swapButton.label = swapLabel;
+        } else {
           pages = switchPages;
-          swapped = true
+          swapped = true;
+          swapButton.label = 'EN';
         }
+        if (page > pages.length) page = pages.length;
         embed = pages[page - 1];
         embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
         await updateButtons(btnCtx);
