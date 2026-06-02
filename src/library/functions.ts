@@ -203,163 +203,99 @@ export const sendPages = async function (ctx: CommandContext, pages: MessageEmbe
     }
   }
 };
-export const sendPagesWithNumber = async function (ctx: CommandContext, originalPages: MessageEmbedOptions[], switchPages?: MessageEmbedOptions[], swapLabel = 'Form Change') {
-  let pages = originalPages;
+export const sendPagesWithNumber = async function (
+  ctx: CommandContext,
+  originalPages: MessageEmbedOptions[],
+  switchPages?: MessageEmbedOptions[],
+  esPages?: MessageEmbedOptions[],
+  esSwitchPages?: MessageEmbedOptions[]
+) {
   let swapped = false;
-  if (pages.length == 1) {
-    ctx.send({
-      embeds: [pages[0]]
-    });
-  } else {
-    // const backButton = new ButtonBuilder()
-    //   .setCustomId("back")
-    //   .setLabel("Prev Page")
-    //   .setEmoji("⬅️")
-    //   .setStyle(ButtonStyle.Secondary)
-    //   .setDisabled(true);
+  let esMode = false;
 
-    // const forwardButton = new ButtonBuilder()
-    //   .setCustomId("forward")
-    //   .setLabel("Next Page")
-    //   .setEmoji("➡️")
-    //   .setStyle(ButtonStyle.Secondary);
+  const getCurrentPages = () => {
+    if (esMode) return (swapped && esSwitchPages) ? esSwitchPages : (esPages ?? originalPages);
+    return (swapped && switchPages) ? switchPages : originalPages;
+  };
 
-    const oneButton: AnyComponentButton = {
-      type: ComponentType.BUTTON,
-      label: 'A1',
-      custom_id: 'one',
-      emoji: { name: '1️⃣' },
-      style: ButtonStyle.SECONDARY
-    };
+  let pages = getCurrentPages();
 
-    const twoButton: AnyComponentButton = {
-      type: ComponentType.BUTTON,
-      label: 'A2',
-      custom_id: 'two',
-      emoji: { name: '2️⃣' },
-      style: ButtonStyle.SECONDARY
-    };
+  if (pages.length === 1 && !switchPages && !esPages) {
+    await ctx.send({ embeds: [pages[0]] });
+    return;
+  }
 
-    const threeButton: AnyComponentButton = {
-      type: ComponentType.BUTTON,
-      label: 'P1',
-      custom_id: 'three',
-      emoji: { name: '3️⃣' },
-      style: ButtonStyle.SECONDARY
-    };
+  const oneButton: AnyComponentButton = { type: ComponentType.BUTTON, label: 'A1', custom_id: 'one', emoji: { name: '1️⃣' }, style: ButtonStyle.SECONDARY };
+  const twoButton: AnyComponentButton = { type: ComponentType.BUTTON, label: 'A2', custom_id: 'two', emoji: { name: '2️⃣' }, style: ButtonStyle.SECONDARY };
+  const threeButton: AnyComponentButton = { type: ComponentType.BUTTON, label: 'P1', custom_id: 'three', emoji: { name: '3️⃣' }, style: ButtonStyle.SECONDARY };
+  const fourButton: AnyComponentButton = { type: ComponentType.BUTTON, label: 'P2', custom_id: 'four', emoji: { name: '4️⃣' }, style: ButtonStyle.SECONDARY };
+  const fiveButton: AnyComponentButton = { type: ComponentType.BUTTON, label: 'P3', custom_id: 'five', emoji: { name: '5️⃣' }, style: ButtonStyle.SECONDARY };
 
-    const fourButton: AnyComponentButton = {
-      type: ComponentType.BUTTON,
-      label: 'P2',
-      custom_id: 'four',
-      emoji: { name: '4️⃣' },
-      style: ButtonStyle.SECONDARY
-    };
+  const formChangeButton: AnyComponentButton = {
+    type: ComponentType.BUTTON, label: 'Form Change', custom_id: 'swap',
+    emoji: { name: '🔄' }, style: ButtonStyle.SECONDARY
+  };
+  const langButton: AnyComponentButton = {
+    type: ComponentType.BUTTON, label: 'ES', custom_id: 'lang',
+    emoji: { name: '🌐' }, style: ButtonStyle.SECONDARY
+  };
 
-    const fiveButton: AnyComponentButton = {
-      type: ComponentType.BUTTON,
-      label: 'P3',
-      custom_id: 'five',
-      emoji: { name: '5️⃣' },
-      style: ButtonStyle.SECONDARY
-    };
+  let embed = pages[0];
+  let page = 1;
+  embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
 
-    const swapButton: AnyComponentButton = {
-      type: ComponentType.BUTTON,
-      label: swapLabel,
-      custom_id: 'swap',
-      emoji: { name: '🔄' },
-      style: ButtonStyle.SECONDARY
-    };
+  const maxPages = Math.max(
+    originalPages.length,
+    switchPages?.length ?? 0,
+    esPages?.length ?? 0,
+    esSwitchPages?.length ?? 0
+  );
 
-    var embed = pages[0];
-    let page = 1;
-    embed = pages[0];
+  const allPageBtns = [oneButton, twoButton, threeButton, fourButton, fiveButton];
+  const pageBtns = allPageBtns.slice(0, maxPages);
+
+  const extraBtns: AnyComponentButton[] = [];
+  if (switchPages || esSwitchPages) extraBtns.push(formChangeButton);
+  if (esPages) extraBtns.push(langButton);
+
+  const rows: ComponentActionRow[] = [{ type: ComponentType.ACTION_ROW, components: pageBtns }];
+  if (extraBtns.length > 0) rows.push({ type: ComponentType.ACTION_ROW, components: extraBtns });
+
+  const updateButtons = async (btnCtx: ComponentContext) => {
+    await btnCtx.editOriginal({ embeds: [embed], components: rows });
+  };
+
+  const goToPage = async (btnCtx: ComponentContext, n: number) => {
+    pages = getCurrentPages();
+    page = Math.min(n, pages.length);
+    embed = pages[page - 1];
     embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
+    await updateButtons(btnCtx);
+  };
 
-    const allComponents = [oneButton, twoButton, threeButton, fourButton, fiveButton];
-    const components = allComponents.slice(0, pages.length);
-    const rows: ComponentActionRow[] = [{
-        type: ComponentType.ACTION_ROW,
-        components: components
-    }]
-    if (switchPages) {
-      rows.push({
-        type: ComponentType.ACTION_ROW,
-        components: [swapButton]
-      })
-    }
-    // components.push(swapButton)
+  await ctx.send({ embeds: [pages[0]], components: rows });
+  try {
+    ctx.registerComponent('one',   (btnCtx) => goToPage(btnCtx, 1));
+    ctx.registerComponent('two',   (btnCtx) => goToPage(btnCtx, 2));
+    ctx.registerComponent('three', (btnCtx) => goToPage(btnCtx, 3));
+    ctx.registerComponent('four',  (btnCtx) => goToPage(btnCtx, 4));
+    ctx.registerComponent('five',  (btnCtx) => goToPage(btnCtx, 5));
 
-    const updateButtons = async (btnCtx: ComponentContext) => {
-      await btnCtx.editOriginal({
-        embeds: [embed],
-        components: rows
-      });
-    };
-
-    // const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    //   backButton,
-    //   forwardButton
-    // );
-    const response = await ctx.send({
-      embeds: [pages[0]],
-      components: rows
+    ctx.registerComponent('swap', async (btnCtx) => {
+      swapped = !swapped;
+      if (swapped && esMode && !esSwitchPages) swapped = false;
+      formChangeButton.label = swapped ? 'Form 1' : 'Form Change';
+      await goToPage(btnCtx, page);
     });
-    try {
-      ctx.registerComponent('one', async (btnCtx) => {
-        page = 1;
-        if (page > pages.length) page = pages.length;
-        embed = pages[page - 1];
-        embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
-        await updateButtons(btnCtx);
-      });
-      ctx.registerComponent('two', async (btnCtx) => {
-        page = 2;
-        if (page > pages.length) page = pages.length;
-        embed = pages[page - 1];
-        embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
-        await updateButtons(btnCtx);
-      });
-      ctx.registerComponent('three', async (btnCtx) => {
-        page = 3;
-        if (page > pages.length) page = pages.length;
-        embed = pages[page - 1];
-        embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
-        await updateButtons(btnCtx);
-      });
-      ctx.registerComponent('four', async (btnCtx) => {
-        page = 4;
-        if (page > pages.length) page = pages.length;
-        embed = pages[page - 1];
-        embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
-        await updateButtons(btnCtx);
-      });
-      ctx.registerComponent('five', async (btnCtx) => {
-        page = 5;
-        if (page > pages.length) page = pages.length;
-        embed = pages[page - 1];
-        embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
-        await updateButtons(btnCtx);
-      });
-      ctx.registerComponent('swap', async (btnCtx) => {
-        if (swapped) {
-          pages = originalPages;
-          swapped = false;
-          swapButton.label = swapLabel;
-        } else {
-          pages = switchPages;
-          swapped = true;
-          swapButton.label = 'EN';
-        }
-        if (page > pages.length) page = pages.length;
-        embed = pages[page - 1];
-        embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
-        await updateButtons(btnCtx);
-      });
-    } catch {
-      return;
-    }
+
+    ctx.registerComponent('lang', async (btnCtx) => {
+      esMode = !esMode;
+      if (swapped && esMode && !esSwitchPages) swapped = false;
+      langButton.label = esMode ? 'EN' : 'ES';
+      await goToPage(btnCtx, page);
+    });
+  } catch {
+    return;
   }
 };
 

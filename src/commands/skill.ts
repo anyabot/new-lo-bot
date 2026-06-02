@@ -110,11 +110,7 @@ export default class SkillCommand extends SlashCommand {
       const esPagesList = await fetchSkillData(`${resolvedTitle}/Global_(ES)`);
       console.log(`[skill] ES page for "${resolvedTitle}": ${esPagesList ? esPagesList.length + ' tables' : 'not found'}`);
 
-      if (esPagesList) {
-        sendPagesWithNumber(ctx, pagesList[0], esPagesList[0], 'ES');
-      } else {
-        sendPagesWithNumber(ctx, pagesList[0], pagesList[1]);
-      }
+      sendPagesWithNumber(ctx, pagesList[0], pagesList[1], esPagesList?.[0], esPagesList?.[1]);
     } catch (err) {
       await ctx.send("Can't find anything");
     }
