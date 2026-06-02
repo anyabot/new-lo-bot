@@ -114,8 +114,7 @@ export default class EquipmentCommand extends SlashCommand {
       }
 
       if (pages.length === 0) return await ctx.send("Can't find anything");
-      if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
-      sendPages(ctx, pages);
+      sendPages(ctx, pages, fallbackTitle ? `_No exact match found. Showing results for **${fallbackTitle}**:_` : undefined);
     } catch (err) {
       await ctx.send("Can't find anything");
       console.log(err);

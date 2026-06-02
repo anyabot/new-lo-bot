@@ -65,11 +65,9 @@ export function restoreImageLink(output: string, removeSize: boolean = false) {
   return output;
 }
 
-export const sendPages = async function (ctx: CommandContext, pages: MessageEmbedOptions[]) {
+export const sendPages = async function (ctx: CommandContext, pages: MessageEmbedOptions[], content?: string) {
   if (pages.length == 1) {
-    ctx.send({
-      embeds: [pages[0]]
-    });
+    ctx.send({ content, embeds: [pages[0]] });
   } else {
     // const backButton = new ButtonBuilder()
     //   .setCustomId("back")
@@ -164,6 +162,7 @@ export const sendPages = async function (ctx: CommandContext, pages: MessageEmbe
     //   forwardButton
     // );
     const response = await ctx.send({
+      content,
       embeds: [pages[0]],
       components: rows
     });
@@ -208,7 +207,8 @@ export const sendPagesWithNumber = async function (
   originalPages: MessageEmbedOptions[],
   switchPages?: MessageEmbedOptions[],
   esPages?: MessageEmbedOptions[],
-  esSwitchPages?: MessageEmbedOptions[]
+  esSwitchPages?: MessageEmbedOptions[],
+  content?: string
 ) {
   let swapped = false;
   let esMode = false;
@@ -221,7 +221,7 @@ export const sendPagesWithNumber = async function (
   let pages = getCurrentPages();
 
   if (pages.length === 1 && !switchPages && !esPages) {
-    await ctx.send({ embeds: [pages[0]] });
+    await ctx.send({ content, embeds: [pages[0]] });
     return;
   }
 
@@ -273,7 +273,7 @@ export const sendPagesWithNumber = async function (
     await updateButtons(btnCtx);
   };
 
-  await ctx.send({ embeds: [pages[0]], components: rows });
+  await ctx.send({ content, embeds: [pages[0]], components: rows });
   try {
     ctx.registerComponent('one',   (btnCtx) => goToPage(btnCtx, 1));
     ctx.registerComponent('two',   (btnCtx) => goToPage(btnCtx, 2));

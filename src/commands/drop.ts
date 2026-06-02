@@ -118,8 +118,7 @@ export default class DropCommand extends SlashCommand {
 
       if (result.type === 'msg') return await ctx.send(result.msg);
       if (result.type === 'notfound') return await ctx.send("Can't find anything");
-      if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
-      sendPages(ctx, result.pages);
+      sendPages(ctx, result.pages, fallbackTitle ? `_No exact match found. Showing results for **${fallbackTitle}**:_` : undefined);
     } catch (err) {
       await ctx.send("Can't find anything");
       console.log(err);

@@ -32,8 +32,14 @@ function collectImages($: any, container: any): string[] {
 
 async function fetchImageData(pageTitle: string): Promise<{ groups: SkinGroup[], link: string }> {
   const link = `${BASE_WIKI}/wiki/${encodeURI(pageTitle)}`;
-  const res = await fetch(link, { method: 'GET' });
-  const body = await res.text();
+  let body: string;
+  try {
+    const res = await fetch(link, { method: 'GET' });
+    body = await res.text();
+  } catch (err) {
+    console.log(`[fetchImageData] fetch error for "${pageTitle}":`, err);
+    return { groups: [], link };
+  }
   const $ = load(body);
   const groups: SkinGroup[] = [];
 
@@ -120,7 +126,7 @@ export default class ImageCommand extends SlashCommand {
       }
 
       if (groups.length === 0) return await ctx.send("Can't find anything");
-      if (fallbackTitle) await ctx.send(`_No exact match found. Showing results for **${fallbackTitle}**:_`);
+      const notice = fallbackTitle ? `_No exact match found. Showing results for **${fallbackTitle}**:_` : undefined;
 
       console.log(`[image] groups(${groups.length}):`, groups.map(g => `${g.label}(${g.images.length})`).join(', '));
 
@@ -140,7 +146,7 @@ export default class ImageCommand extends SlashCommand {
       }
 
       if (pages.length === 1) {
-        await ctx.send({ embeds: pages[0] });
+        await ctx.send({ content: notice, embeds: pages[0] });
         return;
       }
 
@@ -207,7 +213,7 @@ export default class ImageCommand extends SlashCommand {
         }
       ];
 
-      await ctx.send({ embeds: pages[0], components: buildRows() });
+      await ctx.send({ content: notice, embeds: pages[0], components: buildRows() });
 
       try {
         ctx.registerComponent('img_first', async (btnCtx) => {
