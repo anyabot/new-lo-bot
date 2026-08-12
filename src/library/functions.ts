@@ -250,20 +250,25 @@ export const sendPagesWithNumber = async function (ctx: CommandContext, variants
   let page = 1;
   embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
 
-  const maxPages = Math.max(...available.map((v) => Math.max(v.pages.length, v.switchPages?.length ?? 0)));
-
   const allPageBtns = [oneButton, twoButton, threeButton, fourButton, fiveButton];
-  const pageBtns = allPageBtns.slice(0, maxPages);
 
-  const extraBtns: AnyComponentButton[] = [];
-  if (hasSwitch) extraBtns.push(formChangeButton);
-  if (available.length > 1) extraBtns.push(variantButton);
+  // Rebuilt on every update: only the pages/forms the current variant actually has.
+  const buildRows = () => {
+    const rows: ComponentActionRow[] = [{
+      type: ComponentType.ACTION_ROW,
+      components: allPageBtns.slice(0, pages.length)
+    }];
 
-  const rows: ComponentActionRow[] = [{ type: ComponentType.ACTION_ROW, components: pageBtns }];
-  if (extraBtns.length > 0) rows.push({ type: ComponentType.ACTION_ROW, components: extraBtns });
+    const extraBtns: AnyComponentButton[] = [];
+    if (currentVariant().switchPages?.length) extraBtns.push(formChangeButton);
+    if (available.length > 1) extraBtns.push(variantButton);
+    if (extraBtns.length > 0) rows.push({ type: ComponentType.ACTION_ROW, components: extraBtns });
+
+    return rows;
+  };
 
   const updateButtons = async (btnCtx: ComponentContext) => {
-    await btnCtx.editOriginal({ embeds: [embed], components: rows });
+    await btnCtx.editOriginal({ embeds: [embed], components: buildRows() });
   };
 
   const goToPage = async (btnCtx: ComponentContext, n: number) => {
@@ -274,7 +279,7 @@ export const sendPagesWithNumber = async function (ctx: CommandContext, variants
     await updateButtons(btnCtx);
   };
 
-  await ctx.send({ content, embeds: [pages[0]], components: rows });
+  await ctx.send({ content, embeds: [pages[0]], components: buildRows() });
   try {
     ctx.registerComponent('one',   (btnCtx) => goToPage(btnCtx, 1));
     ctx.registerComponent('two',   (btnCtx) => goToPage(btnCtx, 2));
