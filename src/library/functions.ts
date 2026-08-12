@@ -202,25 +202,31 @@ export const sendPages = async function (ctx: CommandContext, pages: MessageEmbe
     }
   }
 };
-export const sendPagesWithNumber = async function (
-  ctx: CommandContext,
-  originalPages: MessageEmbedOptions[],
-  switchPages?: MessageEmbedOptions[],
-  esPages?: MessageEmbedOptions[],
-  esSwitchPages?: MessageEmbedOptions[],
-  content?: string
-) {
-  let swapped = false;
-  let esMode = false;
+export interface PageVariant {
+  label: string;
+  pages: MessageEmbedOptions[];
+  switchPages?: MessageEmbedOptions[];
+}
 
+export const sendPagesWithNumber = async function (ctx: CommandContext, variants: PageVariant[], content?: string) {
+  const available = variants.filter((v) => v && v.pages && v.pages.length);
+  if (!available.length) return;
+
+  let variantIndex = 0;
+  let swapped = false;
+
+  const currentVariant = () => available[variantIndex];
+  const nextVariant = () => available[(variantIndex + 1) % available.length];
   const getCurrentPages = () => {
-    if (esMode) return (swapped && esSwitchPages) ? esSwitchPages : (esPages ?? originalPages);
-    return (swapped && switchPages) ? switchPages : originalPages;
+    const variant = currentVariant();
+    return swapped && variant.switchPages ? variant.switchPages : variant.pages;
   };
 
   let pages = getCurrentPages();
 
-  if (pages.length === 1 && !switchPages && !esPages) {
+  const hasSwitch = available.some((v) => v.switchPages && v.switchPages.length);
+
+  if (pages.length === 1 && !hasSwitch && available.length === 1) {
     await ctx.send({ content, embeds: [pages[0]] });
     return;
   }
@@ -235,8 +241,8 @@ export const sendPagesWithNumber = async function (
     type: ComponentType.BUTTON, label: 'Form Change', custom_id: 'swap',
     emoji: { name: '🔄' }, style: ButtonStyle.SECONDARY
   };
-  const langButton: AnyComponentButton = {
-    type: ComponentType.BUTTON, label: 'ES', custom_id: 'lang',
+  const variantButton: AnyComponentButton = {
+    type: ComponentType.BUTTON, label: nextVariant().label, custom_id: 'lang',
     emoji: { name: '🌐' }, style: ButtonStyle.SECONDARY
   };
 
@@ -244,19 +250,14 @@ export const sendPagesWithNumber = async function (
   let page = 1;
   embed.footer = { text: 'Page ' + page + ' of ' + pages.length };
 
-  const maxPages = Math.max(
-    originalPages.length,
-    switchPages?.length ?? 0,
-    esPages?.length ?? 0,
-    esSwitchPages?.length ?? 0
-  );
+  const maxPages = Math.max(...available.map((v) => Math.max(v.pages.length, v.switchPages?.length ?? 0)));
 
   const allPageBtns = [oneButton, twoButton, threeButton, fourButton, fiveButton];
   const pageBtns = allPageBtns.slice(0, maxPages);
 
   const extraBtns: AnyComponentButton[] = [];
-  if (switchPages || esSwitchPages) extraBtns.push(formChangeButton);
-  if (esPages) extraBtns.push(langButton);
+  if (hasSwitch) extraBtns.push(formChangeButton);
+  if (available.length > 1) extraBtns.push(variantButton);
 
   const rows: ComponentActionRow[] = [{ type: ComponentType.ACTION_ROW, components: pageBtns }];
   if (extraBtns.length > 0) rows.push({ type: ComponentType.ACTION_ROW, components: extraBtns });
@@ -283,15 +284,18 @@ export const sendPagesWithNumber = async function (
 
     ctx.registerComponent('swap', async (btnCtx) => {
       swapped = !swapped;
-      if (swapped && esMode && !esSwitchPages) swapped = false;
+      if (swapped && !currentVariant().switchPages) swapped = false;
       formChangeButton.label = swapped ? 'Form 1' : 'Form Change';
       await goToPage(btnCtx, page);
     });
 
     ctx.registerComponent('lang', async (btnCtx) => {
-      esMode = !esMode;
-      if (swapped && esMode && !esSwitchPages) swapped = false;
-      langButton.label = esMode ? 'EN' : 'ES';
+      variantIndex = (variantIndex + 1) % available.length;
+      if (swapped && !currentVariant().switchPages) {
+        swapped = false;
+        formChangeButton.label = 'Form Change';
+      }
+      variantButton.label = nextVariant().label;
       await goToPage(btnCtx, page);
     });
   } catch {

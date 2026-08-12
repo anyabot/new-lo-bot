@@ -1,6 +1,6 @@
 import { SlashCommand, CommandOptionType, SlashCreator, CommandContext, MessageEmbedOptions } from 'slash-create';
 import { load } from 'cheerio';
-import { nameChange, restoreImageLink, sendPagesWithNumber, te, wikiSearch } from '../library/functions';
+import { nameChange, PageVariant, restoreImageLink, sendPagesWithNumber, te, wikiSearch } from '../library/functions';
 import { BASE_WIKI } from '..';
 
 function addEmbed(img: string, name: string, skill: string, range: string, aoe: string, link: string) {
@@ -106,11 +106,19 @@ export default class SkillCommand extends SlashCommand {
       if (!pagesList) return await ctx.send("Can't find anything");
 
       const resolvedTitle = fallbackTitle ?? unit;
-      const esPagesList = await fetchSkillData(`${resolvedTitle}/Global_(ES)`);
+      const [globalPagesList, esPagesList] = await Promise.all([
+        fetchSkillData(`${resolvedTitle}/Global`),
+        fetchSkillData(`${resolvedTitle}/Global_(ES)`)
+      ]);
+      console.log(`[skill] Global page for "${resolvedTitle}": ${globalPagesList ? globalPagesList.length + ' tables' : 'not found'}`);
       console.log(`[skill] ES page for "${resolvedTitle}": ${esPagesList ? esPagesList.length + ' tables' : 'not found'}`);
 
+      const variants: PageVariant[] = [{ label: 'EN', pages: pagesList[0], switchPages: pagesList[1] }];
+      if (globalPagesList) variants.push({ label: 'Global', pages: globalPagesList[0], switchPages: globalPagesList[1] });
+      if (esPagesList) variants.push({ label: 'ES', pages: esPagesList[0], switchPages: esPagesList[1] });
+
       const notice = fallbackTitle ? `_No exact match found. Showing results for **${fallbackTitle}**:_` : undefined;
-      sendPagesWithNumber(ctx, pagesList[0], pagesList[1], esPagesList?.[0], esPagesList?.[1], notice);
+      sendPagesWithNumber(ctx, variants, notice);
     } catch (err) {
       await ctx.send("Can't find anything");
     }
