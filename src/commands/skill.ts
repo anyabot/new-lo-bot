@@ -113,7 +113,7 @@ export default class SkillCommand extends SlashCommand {
       console.log(`[skill] Global page for "${resolvedTitle}": ${globalPagesList ? globalPagesList.length + ' tables' : 'not found'}`);
       console.log(`[skill] ES page for "${resolvedTitle}": ${esPagesList ? esPagesList.length + ' tables' : 'not found'}`);
 
-      const variants: PageVariant[] = [{ label: 'EN', pages: pagesList[0], switchPages: pagesList[1] }];
+      const variants: PageVariant[] = [{ label: 'KR', pages: pagesList[0], switchPages: pagesList[1] }];
       if (globalPagesList) variants.push({ label: 'Global', pages: globalPagesList[0], switchPages: globalPagesList[1] });
       if (esPagesList) variants.push({ label: 'ES', pages: esPagesList[0], switchPages: esPagesList[1] });
 
