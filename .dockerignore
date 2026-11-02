@@ -15,3 +15,6 @@ slash-commands/.vscode/**/.vscode/**/*
 slash-commands/.vscode/**/.env
 fly.toml
 admin/
+node_modules
+dist
+yarn-error.log

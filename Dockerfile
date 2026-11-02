@@ -33,9 +33,6 @@ COPY --link . .
 # Build application
 RUN npm run build
 
-# Sync Command
-RUN npm run sync
-
 # Remove development dependencies
 RUN npm prune --production
 
